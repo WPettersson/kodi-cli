@@ -383,9 +383,9 @@ echo -e "\n kodi-cli -[p|i|h|s|y youtbe URL/ID|t 'text to send']\n\n" \
   "  Context menu and information\n" \
   "-B Play BBC iPlayer stream. Should be passed the URL to an iPlayer episode as copied from a browser (not just episode list or programme details) as an argument.\n" \
   "-T Play Twitch live stream. Needs name of channel as argument. Optional second argument is quality\n" \
-  "-D Play a direct video link. Needs name of channel as argument.\n" \
+  "-D Play a direct video link. Needs URI of the link as argument.\n" \
   "-t Send text to Kodi to display on screen. Pass 'text to send as a parameter.'\n" \
-  "-r 'magnetlink' Magnet link to play via xbmctorrent\n" \
+        "-r 'magnetlink' Magnet link to play via xbmctorrent\n" \
   "-u Increase the volume on Kodi\n" \
   "-a Interact with the addons namespace, you can use the following subcommands\n" \
   "\tlist [filter] - Retrieves a list of addons. Optionally accepts a filter i.e. xbmc.addon.video \n" \
