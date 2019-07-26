@@ -431,7 +431,11 @@ while getopts "yqopstiudfhBTDraLF" opt; do
   case $opt in
     y)
       #play youtube video
-      play_youtube $2
+      play_youtube "$2"
+      ;;
+    q)
+      #queue youtube video
+      queue_yt_videos "$2"
       ;;
     o)
       #play youtube video directly
