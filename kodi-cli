@@ -43,14 +43,14 @@ LOCK=false
 
 function parse_json {
   key=$1
-  awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'$key'\042/){print $(i+1)}}}' | tr -d '"'
+  awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'"$key"'\042/){print $(i+1)}}}' | tr -d '"'
 }
 
 function xbmc_req {
-  if [ $2 ] ; then
-    curl -s -X POST --header "Content-Type: application/json" -d "$1" http://$KODI_USER:$KODI_PASS@$KODI_HOST:$KODI_PORT/jsonrpc
+  if [ "$2" ] ; then
+    curl -s -X POST --header "Content-Type: application/json" -d "$1" "http://$KODI_USER:$KODI_PASS@$KODI_HOST:$KODI_PORT/jsonrpc"
   else
-    curl -s -X POST --header "Content-Type: application/json" -d "$1" http://$KODI_USER:$KODI_PASS@$KODI_HOST:$KODI_PORT/jsonrpc > /dev/null
+    curl -s -X POST --header "Content-Type: application/json" -d "$1" "http://$KODI_USER:$KODI_PASS@$KODI_HOST:$KODI_PORT/jsonrpc" > /dev/null
   fi
 }
 
@@ -62,7 +62,7 @@ function play_bbc {
   xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Clear", "params":{"playlistid":1}, "id": 1}';
 
   # add the video to the list
-  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.iplayerwww/?mode=202&url='${URL}'"}}, "id" : 2}';
+  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.iplayerwww/?mode=202&url='"${URL}"'"}}, "id" : 2}';
 
   # open the video
   xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{"playlistid":1, "position" : 0}}, "id": 1}';
@@ -73,7 +73,7 @@ function play_bbc {
 function play_twitch {
   ID=$1
   if [ "$2" ] ; then
-    QUALITY=$2
+    QUALITY="$2"
   else
     QUALITY=${TWITCH_QUALITY}
   fi
@@ -83,7 +83,7 @@ function play_twitch {
   xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Clear", "params":{"playlistid":1}, "id": 1}';
 
   # add the video to the list
-  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.twitch/?mode=play&channel_name='${ID}'&quality='${QUALITY}'"}}, "id" : 2}';
+  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.twitch/?mode=play&channel_name='"${ID}"'&quality='"${QUALITY}"'"}}, "id" : 2}';
 
   # open the video
   xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{"playlistid":1, "position" : 0}}, "id": 1}';
@@ -94,7 +94,7 @@ function play_twitch {
 function play_direct_link {
   link=$1
   echo -n "Opening $link on $KODI_HOST ..."
-  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{"file": "'${link}'"}}, "id": 1}';
+  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{"file": "'"${link}"'"}}, "id": 1}';
   echo " done."
 }
 
@@ -118,7 +118,7 @@ function play_youtube {
   xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Clear", "params":{"playlistid":1}, "id": 1}';
 
   # add the video to the list
-  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.youtube/?action=play_video&videoid='$ID'"}}, "id" : 1}';
+  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.youtube/?action=play_video&videoid='"$ID"'"}}, "id" : 1}';
 
   # open the video
   xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{"playlistid":1, "position" : 0}}, "id": 1}';
@@ -142,22 +142,22 @@ function queue_yt_videos {
     ID=${BASH_REMATCH[7]}
   fi
 
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.GetItems", "params":{"playlistid":1}, "id": 99}' true`
-  numberitems=`echo $output | parse_json "total"`
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.GetItems", "params":{"playlistid":1}, "id": 99}' true)
+  numberitems=$(echo "$output" | parse_json "total")
 
   echo -n "Video added to the current playlist $ID on $KODI_HOST which has ($numberitems) items..."
   # add the video to the list
-  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.youtube/?action=play_video&videoid='$ID'"}}, "id" : 1}';
+  xbmc_req '{"jsonrpc": "2.0", "method": "Playlist.Add", "params":{"playlistid":1, "item" :{ "file" : "plugin://plugin.video.youtube/?action=play_video&videoid='"$ID"'"}}, "id" : 1}';
 
   echo " done."
 }
 
 function play_pause {
   # Get Active players first
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true`
-  player_id=`echo $output | parse_json "playerid"`
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true)
+  player_id=$(echo "$output" | parse_json "playerid")
   echo "Pausing/Playing the player with ID => $player_id"
-  xbmc_req '{"jsonrpc": "2.0", "method": "Player.PlayPause", "params": { "playerid": '$player_id' }, "id": 1}' 
+  xbmc_req '{"jsonrpc": "2.0", "method": "Player.PlayPause", "params": { "playerid": '"$player_id"' }, "id": 1}' 
 }
 
 function play_file_or_url {
@@ -180,41 +180,41 @@ function do_addon_list {
   if [ "$ADDONTTYPE" == "" ];
   then
     echo "Retrieving addon list"
-    output=`xbmc_req '{"jsonrpc": "2.0", "method": "Addons.GetAddons", "id": 99}' true`
+    output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Addons.GetAddons", "id": 99}' true)
   else
     echo "Retrieving $ADDONTTYPE addon list"
-    output=`xbmc_req '{"jsonrpc": "2.0", "method": "Addons.GetAddons", "params": { "type": "'$ADDONTTYPE'" }, "id": 99}' true`
+    output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Addons.GetAddons", "params": { "type": "'"$ADDONTTYPE"'" }, "id": 99}' true)
   fi
 
-  echo $output
+  echo "$output"
 }
 
 function do_addon_exec {
   ID=$1
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Addons.ExecuteAddon", "params": { "addonid": "'$ID'" }, "id": 99}' true`
-  echo $output
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Addons.ExecuteAddon", "params": { "addonid": "'"$ID"'" }, "id": 99}' true)
+  echo "$output"
 }
 
 function do_addon_playitem {
   DIR=$1
   SUBDIR="$2"
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "'$DIR'" }, "id": 99}' true`
-  
-  error=`echo $output | jq -r '.error .message'`
-  
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "'"$DIR"'" }, "id": 99}' true)
+
+  error=$(echo "$output" | jq -r '.error .message')
+
   if [ "$error" == "null" ]
   then
 
-    item=`echo $output | jq -r '.result .files[] | select(.label=="'"$SUBDIR"'")'`
-    itemtype=`echo $item | jq -r '.filetype'`
-    file=`echo $item | jq -r '.file'`
+    item=$(echo "$output" | jq -r '.result .files[] | select(.label=="'"$SUBDIR"'")')
+    itemtype=$(echo "$item" | jq -r '.filetype')
+    file=$(echo "$item" | jq -r '.file')
     if [ "$file" == "" ]
     then
       echo "Directory or file $SUBDIR not found";
     elif [ "$itemtype" == "directory" ]
     then
       echo "Finding $SUBDIR"
-      do_addon_playitem "$file" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "$10"
+      do_addon_playitem "$file" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
     elif [ "$itemtype" == "file" ]
     then
       play_file_or_url "$file"
@@ -227,14 +227,14 @@ function do_addon_playitem {
 function do_addon {
   case "$1" in
     list) 
-      do_addon_list $2
+      do_addon_list "$2"
       ;;
     exec)
-      do_addon_exec $2 $3
+      do_addon_exec "$2" "$3"
       ;;
     play)
       echo "Addon play - looking for $3"
-      do_addon_playitem "plugin://$2/" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "$10"
+      do_addon_playitem "plugin://$2/" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
       ;;
     *) echo "$1 is not a valid command for -a"
   esac
@@ -244,9 +244,9 @@ function do_addon {
 
 function do_favourites_get {
   echo "Retrieving favourites list"
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Favourites.GetFavourites", "params": { "properties": [ "window","path","windowparameter" ] } , "id": 99}' true`
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Favourites.GetFavourites", "params": { "properties": [ "window","path","windowparameter" ] } , "id": 99}' true)
 
-  echo $output
+  echo "$output"
 }
 
 # Placeholder function, ready for future implementation.
@@ -275,23 +275,23 @@ function list_get_directory {
     echo "Directory is required"
     exit
   fi
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "'$DIR'" }, "id": 99}' true`
-  
-  echo $output | jq -r '.result .files[] | "\(.label): \(.file) (\(.filetype))"'
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "'"$DIR"'" }, "id": 99}' true)
+
+  echo "$output" | jq -r '.result .files[] | "\(.label): \(.file) (\(.filetype))"'
 
 }
 
 function stop {
   # Get Active players first
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true`
-  player_id=`echo $output | parse_json "playerid"` 
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true)
+  player_id=$(echo "$output" | parse_json "playerid")
   echo "Stopping the player with ID => $player_id"
-  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Stop", "params": { "playerid": '$player_id' }, "id": 1}'
+  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Stop", "params": { "playerid": '"$player_id"' }, "id": 1}'
 }
 
 function send_text {
   echo "Sending the text"
-  xbmc_req '{"jsonrpc": "2.0", "method": "Input.SendText", "params": { "text": "'$1'" }}'
+  xbmc_req '{"jsonrpc": "2.0", "method": "Input.SendText", "params": { "text": "'"$1"'" }}'
 }
 
 function press_key {
@@ -338,7 +338,7 @@ function handle_keys {
 echo "Interactive navigation key: ";
 while :
 do
-  read -s -n1 key
+  read -sr -n1 key
   if [[ $key = q ]]
   then
     break
@@ -361,8 +361,8 @@ function volume_down {
 
 function fullscreen_toggle {
   # Get Active players first
-  output=`xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true`
-  player_id=`echo $output | parse_json "playerid"`
+  output=$(xbmc_req '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 99}' true)
+  player_id=$(echo "$output" | parse_json "playerid")
   echo "Toggle fullscreen on the player with ID => $player_id"
   xbmc_req '{ "jsonrpc": "2.0", "method": "GUI.SetFullscreen", "params": { "fullscreen": "toggle" }, "id": 1 }'
 }
@@ -393,7 +393,7 @@ function play_xbmctorrent() {
   fi
   echo -n "Torrent link sending: ${1}"
   ID="${1}"
-  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{ "file" : "plugin://plugin.video.xbmctorrent/play/'$(rawurlencode "$1")'" }}, "id": 1}'
+  xbmc_req '{"jsonrpc": "2.0", "method": "Player.Open", "params":{"item":{ "file" : "plugin://plugin.video.xbmctorrent/play/'"$(rawurlencode "$1")"'" }}, "id": 1}'
 }
 
 
@@ -440,7 +440,7 @@ while getopts "yqopstiudfhBTDraLF" opt; do
     o)
       #play youtube video directly
       #this depends on using mps-youtube
-      play_youtube `mpsyt /$2, i 1, q | grep -i link | awk -F 'v=' '{ print $2 }'`
+      play_youtube "$(mpsyt "/$2", i 1, q | grep -i link | awk -F 'v=' '{ print $2 }')"
       ;;
     p)
       play_pause
@@ -452,20 +452,20 @@ while getopts "yqopstiudfhBTDraLF" opt; do
       play_xbmctorrent "$2"
       ;;
     t)
-      send_text $2
+      send_text "$2"
       handle_keys
       ;;
     L)
-      list_get_directory $2
+      list_get_directory "$2"
       ;;
     B)
-      play_bbc $2
+      play_bbc "$2"
       ;;
     T)
-      play_twitch $2 $3
+      play_twitch "$2" "$3"
       ;;
     D)
-      play_direct_link $2
+      play_direct_link "$2"
       ;;
     u)
       volume_up
@@ -478,10 +478,10 @@ while getopts "yqopstiudfhBTDraLF" opt; do
       ;;
     F)
       shift
-      do_favourites $@
+      do_favourites "$@"
       ;;
     a)
-      do_addon "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "$10"
+      do_addon "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
       ;;
     i)
       handle_keys
