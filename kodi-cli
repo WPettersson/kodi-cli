@@ -349,6 +349,11 @@ do
 done
 }
 
+function volume_mute {
+    echo "Volume mute"
+    xbmc_req '{ "jsonrpc": "2.0", "method": "Application.SetMute", "params": { "mute": "toggle" }, "id": 1 }'
+}
+
 function volume_up {
   echo "Incrementing volume"
   xbmc_req '{ "jsonrpc": "2.0", "method": "Application.SetVolume", "params": { "volume": "increment" }, "id": 1 }'
@@ -427,7 +432,7 @@ echo -e "\n kodi-cli -[p|i|h|s|y youtbe URL/ID|t 'text to send']\n\n" \
 }
 
 ## Process command line arguments
-while getopts "yqopstiudfhBTDraLF" opt; do
+while getopts "yqopstiudxfhBTDraLF" opt; do
   case $opt in
     y)
       #play youtube video
@@ -472,6 +477,9 @@ while getopts "yqopstiudfhBTDraLF" opt; do
       ;;
     d)
       volume_down
+      ;;
+    x)
+      volume_mute
       ;;
     f)
       fullscreen_toggle
